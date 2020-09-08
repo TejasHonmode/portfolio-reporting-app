@@ -28,7 +28,7 @@ router.post('/addstock', auth,async(req, res) => {
             price: priceArray
         }
     })
-    console.log('Mystock----->', mystock);
+    console.log('Mystock----->yayaya', mystock);
     await mystock.save()
     console.log('MyStock saved----------->');
     res.send({mystock, openingPrice:priceArray[0],closingPrice:priceArray[priceArray.length-1], eodReturn:`${(priceArray[priceArray.length-1] - mystock.buyPrice)*100/mystock.buyPrice}%`})
