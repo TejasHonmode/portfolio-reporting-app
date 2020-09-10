@@ -34,7 +34,24 @@ const userSchema = new mongoose.Schema({
         // }
 
     },
-
+    balance:{
+        type: Number,
+        default: 100000
+    },
+    invested:{
+        type: Number,
+        default: 0
+    },
+    roi:{
+        percentage:{
+            type: Number,
+            default: 0
+        },
+        amount:{
+            type: Number,
+            default: 0
+        }
+    },
     tokens: [{
         token: {
             type: String,

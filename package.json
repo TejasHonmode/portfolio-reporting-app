@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@supercharge/strings": "^1.11.0",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.19.0",
     "chance": "^1.1.7",

@@ -3,7 +3,7 @@ const validator = require('validator')
 const bcryptjs = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const uuid = require('uuid')
-
+const Str = require('@supercharge/strings')
 
 const stockSchema = new mongoose.Schema({
     name: {
@@ -11,16 +11,18 @@ const stockSchema = new mongoose.Schema({
         required: true,
         trim: true
     },
-    id: {
+    stockType:{
+        type: String
+    },
+    stockId: {
         type: String,
-        default: uuid.v4()
+        default: Str.random(21)
     },
     // price:{
     //     type:[Number]
     // },
-    quantity:{
-        type: Number,
-        default: 1000
+    prices:{
+        type:[Number]
     }
 }, {
     timestamps: true

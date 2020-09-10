@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken')
 const uuid = require('uuid')
 const Str = require('@supercharge/strings')
 
-const mystockSchema = new mongoose.Schema({
+const historySchema = new mongoose.Schema({
     name: {
         type: String,
         required: true,
@@ -17,6 +17,9 @@ const mystockSchema = new mongoose.Schema({
     stockId: {
         type: String,
         default: Str.random(21)
+    },
+    trade:{
+        type: String
     },
     tradeId: {
         type: String,
@@ -30,40 +33,16 @@ const mystockSchema = new mongoose.Schema({
     quantity:{
         type: Number
     },
-    buyPrice:{
+    pricePerUnit:{
         type: Number
     },
-    totalInvestment:{
+    totalPrice:{
         type: Number
-    },
-    sellPrice:{
-        type: Number
-    },
-    totalReturns:{
-        type: Number
-    },
-    prices:[{
-        day:{
-            type: Number,
-            default: 0
-        },
-        price: {
-           type: [Number]
-        },
-        oneDayChange:{
-            type: Number
-        },
-        roi:{
-            type: Number
-        },
-        currentValue:{
-            type: Number
-        }
-    }]
+    }
 }, {
     timestamps: true
 })
 
-const Mystock = mongoose.model('Mystock', mystockSchema)
+const History = mongoose.model('History', historySchema)
 
-module.exports = Mystock
+module.exports = History
