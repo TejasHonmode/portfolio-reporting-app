@@ -15,20 +15,20 @@ const mystockSchema = new mongoose.Schema({
         type: String
     },
     stockId: {
-        type: String,
-        default: Str.random(21)
+        type: String
     },
-    tradeId: {
-        type: String,
-        default: Str.random(21)
-    },
+    // tradeId: {
+    //     type: String,
+    //     default: Str.random(21)
+    // },
     owner:{
         type: mongoose.Schema.Types.ObjectId,
         required: true,
         ref: 'User'
     },
     quantity:{
-        type: Number
+        type: Number,
+        default: 0
     },
     buyPrice:{
         type: Number
@@ -36,30 +36,30 @@ const mystockSchema = new mongoose.Schema({
     totalInvestment:{
         type: Number
     },
-    sellPrice:{
-        type: Number
-    },
+    // sellPrice:{
+    //     type: Number
+    // },
     totalReturns:{
         type: Number
     },
-    prices:[{
-        day:{
-            type: Number,
-            default: 0
-        },
-        price: {
-           type: [Number]
-        },
-        oneDayChange:{
-            type: Number
-        },
-        roi:{
-            type: Number
-        },
-        currentValue:{
-            type: Number
-        }
-    }]
+    // prices:[{
+    //     day:{
+    //         type: Number,
+    //         default: 0
+    //     },
+    //     price: {
+    //        type: [Number]
+    //     },
+    //     oneDayChange:{
+    //         type: Number
+    //     },
+    //     roi:{
+    //         type: Number
+    //     },
+    //     currentValue:{
+    //         type: Number
+    //     }
+    // }]
 }, {
     timestamps: true
 })

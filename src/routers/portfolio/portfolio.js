@@ -7,10 +7,14 @@ const Mystock = require('../../models/mystocks')
 const History = require('../../models/history')
 
 const auth = require('../../middleware/auth')
+const { MaxKey } = require('mongodb')
+
+const Str = require('@supercharge/strings')
+
 
 const router = new express.Router()
 
-router.post('/createStocks', async(req,res)=>{
+router.post('/createstock', async(req,res)=>{
 
     let name = req.body.name
     let stockType = req.body.stockType
@@ -29,8 +33,9 @@ router.post('/createStocks', async(req,res)=>{
 
         res.send({
             stock,
-            openingPrices: prices.splice(0,365),
-            closingPrices: prices.splice(1,366)
+            openingPrices: prices.slice(0,365),
+            closingPrices: prices.slice(-365),
+            len: prices.length
         })
 
     } catch (e) {
@@ -39,7 +44,7 @@ router.post('/createStocks', async(req,res)=>{
 
 })
 
-router.get('/showStocks', async(req,res)=>{
+router.get('/showstocks', async(req,res)=>{
 
     try {
         let stocks = await Stock.find({})
@@ -50,116 +55,308 @@ router.get('/showStocks', async(req,res)=>{
 })
 
 
-router.post('/addstock', auth,async(req, res) => {
+router.post('/transaction', auth,async(req, res) => {
 
     let name = req.body.name
     let quantity=req.body.quantity
-    let buyPrice = req.body.buyPrice
+    let trade = req.body.trade
+    let price = req.body.price
+    let date = req.body.date
+    date = date.split('/')
+    let months={'01':'January','02':'February','03':'March','04':'April','05':'May','06':'June','07':'July','08':'August','09':'September','10':'October','11':'November','12':'December'}
     // let stockType = req.body.stockType
-    console.log('name quant buypr---->', name, quantity, buyPrice, stockType);
-    
+    console.log('name quant buypr---->', name, quantity, trade, date);
+    console.log(`${date[0]} ${months[date[1]]} ${date[2]}`);
+    let date1 = new Date(`${date[0] } ${months[date[1]]} ${date[2]}`)
+    console.log('date1----------->',date1);
+    let date0 = new Date("1 January 2019")
+    console.log('date0----------->', date0);
+    let doy = (date1 - date0)/(1000*60*60*24)
+    console.log('DOY----------->', doy);
+    let stock = await Stock.findOne({name})
+    console.log('STOCK------------->', stock);
     let mystock = await Mystock.findOne({name, owner:req.user._id})
-    console.log('Mystock before if----->', mystock);
+    console.log('mystock------------------>',mystock);
     if(!mystock){
 
-        let priceArray = await Array.from(Array(9)).map(x => chance.floating({min: buyPrice-chance.floating({min:0, max:3}), max: buyPrice+chance.floating({min:0,max:3})}))
-        console.log('Price array------>', priceArray);
-        let irrelevant = priceArray.splice(chance.integer({min:2,max:8}),0,buyPrice)
-        console.log('New Price array------>', priceArray);
-
-        mystock = new Mystock({
+        mystock= new Mystock({
             name,
-            stockType,
+            stockType: stock.stockType,
+            stockId: stock.stockId,
             owner: req.user._id,
             quantity,
-            buyPrice,
-            totalInvestment: buyPrice*quantity,
-            totalReturns: (priceArray[priceArray.length-1]*quantity - (buyPrice*quantity)).toFixed(4),
-            prices:{
-                price: priceArray,
-                oneDayChange: ((priceArray[priceArray.length-1] - priceArray[0])*100/priceArray[0]).toFixed(4),
-                roi: ((priceArray[priceArray.length-1] - buyPrice)*100/buyPrice).toFixed(4),
-                currentValue: (((priceArray[priceArray.length-1] - buyPrice)*100/buyPrice)*(buyPrice*quantity)/100).toFixed(4)
-            }
+            buyPrice: price,
+            totalInvestment: quantity*price,
+            totalReturns: (stock.prices[doy+1] - price)*quantity
         })
-        console.log('Mystock----->yayaya', mystock);
-        console.log('Mystock----->yayaya11111', mystock);
         await mystock.save()
-        console.log('MyStock saved----------->');
+        console.log('mystock saved.....');
+
+        let mystocks = await Mystock.find({owner: req.user._id})
+        let totalInv = 0
+        let avgPrice = 0
+        let totalStocks = 0
+        for(var i=0;i<mystocks.length;i++){
+
+            totalStocks = totalStocks + mystocks[i].quantity
+        }
+
+        req.user.invested = req.user.invested + quantity*price
+        req.user.balance = req.user.balance - quantity*price
+        req.user.buyPrice = req.user.invested/totalStocks
+        await req.user.save()
+        console.log('user saved------');
 
         let history = new History({
             name,
-            stockType,
-            stockId: mystock.stockId,
-            trade: 'buy',
-            tradeId: mystock.tradeId,
-            owner:req.user._id,
+            stockType:stock.stockType,
+            stockId: stock.stockId,
+            trade,
+            owner: req.user._id,
             quantity,
-            pricePerUnit: buyPrice,
-            totalPrice: (buyPrice*quantity).toFixed(4)
+            pricePerUnit: price,
+            totalAmount: quantity*price
         })
         await history.save()
-        console.log('History saved');
-
-        return res.send({mystock, openingPrice:priceArray[0],closingPrice:priceArray[priceArray.length-1], oneDayReturn:`${mystock.oneDayChange}%`, roi:`${mystock.prices.roi}%`})
-    
+        console.log('History saved -------');
+        return res.send({
+            mystock,
+            user: req.user,
+            history
+        })
     }
-    else{
-        // let mystock = await Mystock.findOne({name,owner:req.user._id})
-        let updatemystock = await Mystock.findOneAndUpdate({
-            name,owner:req.user._id
-        },
-        {
-            quantity: mystock.quantity+quantity,
-            totalInvestment: (mystock.totalInvestment + (buyPrice*quantity)).toFixed(4),
-            buyPrice: ((mystock.totalInvestment + (buyPrice*quantity))/(mystock.quantity+quantity)).toFixed(4)
-            // totalReturns: priceArray[priceArray.length-1]*(mystock.quantity+quantity) - (mystock.totalInvestment + (buyPrice*quantity))
-        })
-        console.log('Updated quantity, total investment and buy price------------->');
+    else if(mystock && trade==='buy'){
 
-
-        // let mystock1 = await Mystock.findOne({name,owner:req.user._id})
-        // console.log('Mystock-------------->', mystock1);
-        let priceArray = await Array.from(Array(8)).map(x => chance.floating({min: buyPrice-chance.floating({min:0, max:3}), max: buyPrice+chance.floating({min:0,max:3})}))
-        console.log('Price array------>', priceArray);
-        let irr = priceArray.unshift(mystock.prices[mystock.prices.length-1].price[mystock.prices[mystock.prices.length-1].price.length-1])
-        let irrelevant = priceArray.splice(chance.integer({min:2,max:8}),0,buyPrice)
-        console.log('New Price array------>', priceArray);
-
-        mystock.totalReturns = (priceArray[priceArray.length-1]*(mystock.quantity+quantity) - (mystock.totalInvestment + (buyPrice*quantity))).toFixed(4)
+        mystock.quantity = quantity+mystock.quantity,
+        mystock.totalInvestment = mystock.totalInvestment + quantity*price,
+        mystock.buyPrice = mystock.totalInvestment / mystock.quantity
+        mystock.totalReturns = (stock.prices[doy+1]*mystock.quantity) - mystock.totalInvestment
         await mystock.save()
-        console.log('total returns updated');
-        console.log('total');
-        mystock.prices = mystock.prices.concat({
-            day: mystock.prices[mystock.prices.length-1].day + 1,
-            price: priceArray,
-            oneDayChange: ((priceArray[priceArray.length-1] - priceArray[0])*100/priceArray[0]).toFixed(4),
-            roi: ((priceArray[priceArray.length-1] - (mystock.totalInvestment/mystock.quantity))*100/(mystock.totalInvestment/mystock.quantity)).toFixed(4),
-            currentValue: (mystock.totalInvestment + (((priceArray[priceArray.length-1] - (mystock.totalInvestment/mystock.quantity))*100/(mystock.totalInvestment/mystock.quantity))*mystock.totalInvestment)/100).toFixed(4)
-        })
-        await mystock.save()
-        console.log('day and prices updated-------');
+        console.log('mystock saved ----------');
+
+        let mystocks = await Mystock.find({owner: req.user._id})
+        let totalInv = 0
+        let avgPrice = 0
+        let totalStocks = 0
+        for(var i=0;i<mystocks.length;i++){
+
+            totalStocks = totalStocks + mystocks[i].quantity
+        }
+
+        req.user.invested = req.user.invested + quantity*price
+        req.user.balance = req.user.balance - quantity*price
+        req.user.buyPrice = req.user.invested/totalStocks
+        await req.user.save()
+        console.log('user saved--------------');
 
         let history = new History({
             name,
-            stockType,
-            stockId: mystock.stockId,
-            trade: 'buy',
-            tradeId: mystock.tradeId,
-            owner:req.user._id,
+            stockType: stock.stockType,
+            stockId: stock.stockId,
+            trade,
+            owner: req.user._id,
             quantity,
-            pricePerUnit: buyPrice,
-            totalPrice: (buyPrice*quantity).toFixed(4)
+            pricePerUnit: price,
+            totalAmount: quantity*price
         })
         await history.save()
-        console.log('History saved');
 
         return res.send({
-            mystock: mystock,
-            openingPrice: priceArray[0],
-            closingPrice: priceArray[priceArray.length-1]
+            mystock,
+            user: req.user,
+            history
         })
     }
+
+    else if(mystock && trade==='sell'){
+
+        // let mystocks = await Mystock.find({})
+        mystock.quantity = mystock.quantity - quantity
+
+        if(mystock.quantity === 0){
+            
+
+            let history = new History({
+                name,
+                stockType: stock.stockType,
+                stockId: stock.stockId,
+                trade,
+                owner: req.user._id,
+                quantity,
+                pricePerUnit: price,
+                totalAmount: quantity*price
+            })
+            await history.save()
+            let del = await Mystock.findOneAndDelete({name, owner: req.user._id})
+
+            let mystocks = await Mystock.find({owner: req.user._id})
+            let totalInv = 0
+            let avgPrice = 0
+            let totalStocks = 0
+            for(var i=0;i<mystocks.length;i++){
+
+                totalStocks = totalStocks + mystocks[i].quantity
+            }
+
+            req.user.invested = req.user.invested - quantity*mystock.buyPrice
+            req.user.buyPrice = req.user.invested/totalStocks
+            req.user.balance = req.user.balance + quantity*price
+            await req.user.save()
+
+            return res.send({
+                mystock,
+                user: req.user,
+                history
+            })
+        }
+        else {
+
+            mystock.totalInvestment = mystock.totalInvestment - quantity*(mystock.buyPrice)
+            console.log('mystock total inv now--------', mystock.totalInvestment);
+            // mystock.buyPrice = mystock.totalInvestment/mystock.quantity
+            mystock.totalReturns = (stock.prices[doy+1]*mystock.quantity) - mystock.totalInvestment
+            await mystock.save()
+            console.log('mystock saved------');
+
+            let mystocks = await Mystock.find({owner: req.user._id})
+            let totalInv = 0
+            let avgPrice = 0
+            let totalStocks = 0
+            for(var i=0;i<mystocks.length;i++){
+
+                totalStocks = totalStocks + mystocks[i].quantity
+            }
+
+            req.user.invested = req.user.invested - quantity*mystock.buyPrice
+            req.user.buyPrice = req.user.invested/totalStocks
+            req.user.balance = req.user.balance + quantity*price
+            await req.user.save()
+            console.log('user saved-------');
+
+            let history = new History({
+                name,
+                stockType: stock.stockType,
+                stockId: stock.stockId,
+                trade,
+                owner: req.user._id,
+                quantity,
+                pricePerUnit: price,
+                totalAmount: quantity*price
+            })
+            await history.save()
+
+            return res.send({
+                mystock,
+                user: req.user,
+                history
+            })
+        }
+
+        
+    }
+
+    // let mystock = await Mystock.findOne({name, owner:req.user._id})
+    // console.log('Mystock before if----->', mystock);
+    // if(!mystock){
+
+    //     let priceArray = await Array.from(Array(9)).map(x => chance.floating({min: buyPrice-chance.floating({min:0, max:3}), max: buyPrice+chance.floating({min:0,max:3})}))
+    //     console.log('Price array------>', priceArray);
+    //     let irrelevant = priceArray.splice(chance.integer({min:2,max:8}),0,buyPrice)
+    //     console.log('New Price array------>', priceArray);
+
+    //     mystock = new Mystock({
+    //         name,
+    //         stockType,
+    //         owner: req.user._id,
+    //         quantity,
+    //         buyPrice,
+    //         totalInvestment: buyPrice*quantity,
+    //         totalReturns: (priceArray[priceArray.length-1]*quantity - (buyPrice*quantity)).toFixed(4),
+    //         prices:{
+    //             price: priceArray,
+    //             oneDayChange: ((priceArray[priceArray.length-1] - priceArray[0])*100/priceArray[0]).toFixed(4),
+    //             roi: ((priceArray[priceArray.length-1] - buyPrice)*100/buyPrice).toFixed(4),
+    //             currentValue: (((priceArray[priceArray.length-1] - buyPrice)*100/buyPrice)*(buyPrice*quantity)/100).toFixed(4)
+    //         }
+    //     })
+    //     console.log('Mystock----->yayaya', mystock);
+    //     console.log('Mystock----->yayaya11111', mystock);
+    //     await mystock.save()
+    //     console.log('MyStock saved----------->');
+
+    //     let history = new History({
+    //         name,
+    //         stockType,
+    //         stockId: mystock.stockId,
+    //         trade: 'buy',
+    //         tradeId: mystock.tradeId,
+    //         owner:req.user._id,
+    //         quantity,
+    //         pricePerUnit: buyPrice,
+    //         totalPrice: (buyPrice*quantity).toFixed(4)
+    //     })
+    //     await history.save()
+    //     console.log('History saved');
+
+    //     return res.send({mystock, openingPrice:priceArray[0],closingPrice:priceArray[priceArray.length-1], oneDayReturn:`${mystock.oneDayChange}%`, roi:`${mystock.prices.roi}%`})
+    
+    // }
+    // else{
+    //     // let mystock = await Mystock.findOne({name,owner:req.user._id})
+    //     let updatemystock = await Mystock.findOneAndUpdate({
+    //         name,owner:req.user._id
+    //     },
+    //     {
+    //         quantity: mystock.quantity+quantity,
+    //         totalInvestment: (mystock.totalInvestment + (buyPrice*quantity)).toFixed(4),
+    //         buyPrice: ((mystock.totalInvestment + (buyPrice*quantity))/(mystock.quantity+quantity)).toFixed(4)
+    //         // totalReturns: priceArray[priceArray.length-1]*(mystock.quantity+quantity) - (mystock.totalInvestment + (buyPrice*quantity))
+    //     })
+    //     console.log('Updated quantity, total investment and buy price------------->');
+
+
+    //     // let mystock1 = await Mystock.findOne({name,owner:req.user._id})
+    //     // console.log('Mystock-------------->', mystock1);
+    //     let priceArray = await Array.from(Array(8)).map(x => chance.floating({min: buyPrice-chance.floating({min:0, max:3}), max: buyPrice+chance.floating({min:0,max:3})}))
+    //     console.log('Price array------>', priceArray);
+    //     let irr = priceArray.unshift(mystock.prices[mystock.prices.length-1].price[mystock.prices[mystock.prices.length-1].price.length-1])
+    //     let irrelevant = priceArray.splice(chance.integer({min:2,max:8}),0,buyPrice)
+    //     console.log('New Price array------>', priceArray);
+
+    //     mystock.totalReturns = (priceArray[priceArray.length-1]*(mystock.quantity+quantity) - (mystock.totalInvestment + (buyPrice*quantity))).toFixed(4)
+    //     await mystock.save()
+    //     console.log('total returns updated');
+    //     console.log('total');
+    //     mystock.prices = mystock.prices.concat({
+    //         day: mystock.prices[mystock.prices.length-1].day + 1,
+    //         price: priceArray,
+    //         oneDayChange: ((priceArray[priceArray.length-1] - priceArray[0])*100/priceArray[0]).toFixed(4),
+    //         roi: ((priceArray[priceArray.length-1] - (mystock.totalInvestment/mystock.quantity))*100/(mystock.totalInvestment/mystock.quantity)).toFixed(4),
+    //         currentValue: (mystock.totalInvestment + (((priceArray[priceArray.length-1] - (mystock.totalInvestment/mystock.quantity))*100/(mystock.totalInvestment/mystock.quantity))*mystock.totalInvestment)/100).toFixed(4)
+    //     })
+    //     await mystock.save()
+    //     console.log('day and prices updated-------');
+
+    //     let history = new History({
+    //         name,
+    //         stockType,
+    //         stockId: mystock.stockId,
+    //         trade: 'buy',
+    //         tradeId: mystock.tradeId,
+    //         owner:req.user._id,
+    //         quantity,
+    //         pricePerUnit: buyPrice,
+    //         totalPrice: (buyPrice*quantity).toFixed(4)
+    //     })
+    //     await history.save()
+    //     console.log('History saved');
+
+    //     return res.send({
+    //         mystock: mystock,
+    //         openingPrice: priceArray[0],
+    //         closingPrice: priceArray[priceArray.length-1]
+    //     })
+    // }
     
 
 })

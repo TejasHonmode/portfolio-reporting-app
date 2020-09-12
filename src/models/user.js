@@ -38,6 +38,10 @@ const userSchema = new mongoose.Schema({
         type: Number,
         default: 100000
     },
+    buyPrice:{
+        type: Number,
+        default: 0
+    },
     invested:{
         type: Number,
         default: 0

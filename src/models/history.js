@@ -16,7 +16,7 @@ const historySchema = new mongoose.Schema({
     },
     stockId: {
         type: String,
-        default: Str.random(21)
+        // default: Str.random(21)
     },
     trade:{
         type: String
@@ -36,7 +36,7 @@ const historySchema = new mongoose.Schema({
     pricePerUnit:{
         type: Number
     },
-    totalPrice:{
+    totalAmount:{
         type: Number
     }
 }, {
