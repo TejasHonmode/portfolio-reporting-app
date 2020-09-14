@@ -96,14 +96,18 @@ router.post('/transaction', auth,async(req, res) => {
         let totalInv = 0
         let avgPrice = 0
         let totalStocks = 0
+        let totalReturn = 0
         for(var i=0;i<mystocks.length;i++){
 
             totalStocks = totalStocks + mystocks[i].quantity
+            totalReturn = totalReturn + mystocks[i].totalReturns
         }
 
         req.user.invested = req.user.invested + quantity*price
         req.user.balance = req.user.balance - quantity*price
         req.user.buyPrice = req.user.invested/totalStocks
+        req.user.roi.totalReturns = totalReturn
+        req.user.roi.percentage = req.user.roi.totalReturns/req.user.invested
         await req.user.save()
         console.log('user saved------');
 
@@ -115,7 +119,8 @@ router.post('/transaction', auth,async(req, res) => {
             owner: req.user._id,
             quantity,
             pricePerUnit: price,
-            totalAmount: quantity*price
+            totalAmount: quantity*price,
+            date: date1
         })
         await history.save()
         console.log('History saved -------');
@@ -138,14 +143,18 @@ router.post('/transaction', auth,async(req, res) => {
         let totalInv = 0
         let avgPrice = 0
         let totalStocks = 0
+        let totalReturn = 0
         for(var i=0;i<mystocks.length;i++){
 
             totalStocks = totalStocks + mystocks[i].quantity
+            totalReturn = totalReturn + mystocks[i].totalReturns
         }
 
         req.user.invested = req.user.invested + quantity*price
         req.user.balance = req.user.balance - quantity*price
         req.user.buyPrice = req.user.invested/totalStocks
+        req.user.roi.totalReturns = totalReturn
+        req.user.roi.percentage = req.user.roi.totalReturns/req.user.invested
         await req.user.save()
         console.log('user saved--------------');
 
@@ -157,7 +166,8 @@ router.post('/transaction', auth,async(req, res) => {
             owner: req.user._id,
             quantity,
             pricePerUnit: price,
-            totalAmount: quantity*price
+            totalAmount: quantity*price,
+            date: date1
         })
         await history.save()
 
@@ -193,14 +203,18 @@ router.post('/transaction', auth,async(req, res) => {
             let totalInv = 0
             let avgPrice = 0
             let totalStocks = 0
+            let totalReturn = 0
             for(var i=0;i<mystocks.length;i++){
 
                 totalStocks = totalStocks + mystocks[i].quantity
+                totalReturn = totalReturn + mystocks[i].totalReturns
             }
 
-            req.user.invested = req.user.invested - quantity*mystock.buyPrice
+            req.user.invested = req.user.invested + quantity*price
+            req.user.balance = req.user.balance - quantity*price
             req.user.buyPrice = req.user.invested/totalStocks
-            req.user.balance = req.user.balance + quantity*price
+            req.user.roi.totalReturns = totalReturn
+            req.user.roi.percentage = req.user.roi.totalReturns/req.user.invested
             await req.user.save()
 
             return res.send({
@@ -222,14 +236,18 @@ router.post('/transaction', auth,async(req, res) => {
             let totalInv = 0
             let avgPrice = 0
             let totalStocks = 0
+            let totalReturn = 0
             for(var i=0;i<mystocks.length;i++){
 
                 totalStocks = totalStocks + mystocks[i].quantity
+                totalReturn = totalReturn + mystocks[i].totalReturns
             }
 
-            req.user.invested = req.user.invested - quantity*mystock.buyPrice
+            req.user.invested = req.user.invested + quantity*price
+            req.user.balance = req.user.balance - quantity*price
             req.user.buyPrice = req.user.invested/totalStocks
-            req.user.balance = req.user.balance + quantity*price
+            req.user.roi.totalReturns = totalReturn
+            req.user.roi.percentage = req.user.roi.totalReturns/req.user.invested
             await req.user.save()
             console.log('user saved-------');
 
@@ -367,7 +385,7 @@ router.get('/mystocks', async(req,res)=>{
     let mystocks = await Mystock.find({})
 
     try {
-        res.send(history)
+        res.send(mystocks)
     } catch (e) {
         res.send(e)
     }

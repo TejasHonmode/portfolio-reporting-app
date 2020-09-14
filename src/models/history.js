@@ -38,6 +38,10 @@ const historySchema = new mongoose.Schema({
     },
     totalAmount:{
         type: Number
+    },
+    date:{
+        type: String,
+        required: true
     }
 }, {
     timestamps: true
