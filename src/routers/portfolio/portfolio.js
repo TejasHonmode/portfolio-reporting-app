@@ -194,7 +194,8 @@ router.post('/transaction', auth,async(req, res) => {
                 owner: req.user._id,
                 quantity,
                 pricePerUnit: price,
-                totalAmount: quantity*price
+                totalAmount: quantity*price,
+                date: date1
             })
             await history.save()
             let del = await Mystock.findOneAndDelete({name, owner: req.user._id})
@@ -210,8 +211,8 @@ router.post('/transaction', auth,async(req, res) => {
                 totalReturn = totalReturn + mystocks[i].totalReturns
             }
 
-            req.user.invested = req.user.invested + quantity*price
-            req.user.balance = req.user.balance - quantity*price
+            req.user.invested = req.user.invested - quantity*price
+            req.user.balance = req.user.balance + quantity*price
             req.user.buyPrice = req.user.invested/totalStocks
             req.user.roi.totalReturns = totalReturn
             req.user.roi.percentage = req.user.roi.totalReturns/req.user.invested
@@ -243,8 +244,8 @@ router.post('/transaction', auth,async(req, res) => {
                 totalReturn = totalReturn + mystocks[i].totalReturns
             }
 
-            req.user.invested = req.user.invested + quantity*price
-            req.user.balance = req.user.balance - quantity*price
+            req.user.invested = req.user.invested - quantity*price
+            req.user.balance = req.user.balance + quantity*price
             req.user.buyPrice = req.user.invested/totalStocks
             req.user.roi.totalReturns = totalReturn
             req.user.roi.percentage = req.user.roi.totalReturns/req.user.invested
@@ -259,7 +260,8 @@ router.post('/transaction', auth,async(req, res) => {
                 owner: req.user._id,
                 quantity,
                 pricePerUnit: price,
-                totalAmount: quantity*price
+                totalAmount: quantity*price,
+                date: date1
             })
             await history.save()
 
