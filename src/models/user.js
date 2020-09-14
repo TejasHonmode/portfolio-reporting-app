@@ -46,6 +46,16 @@ const userSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    bond:{
+        invested:{
+            type: Number,
+            default: 0
+        },
+        totalReturns:{
+            type: Number,
+            default: 0
+        }
+    },
     roi:{
         percentage:{
             type: Number,
