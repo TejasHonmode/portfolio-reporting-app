@@ -211,7 +211,7 @@ router.post('/transaction', auth,async(req, res) => {
                 totalReturn = totalReturn + mystocks[i].totalReturns
             }
 
-            req.user.invested = req.user.invested - quantity*price
+            req.user.invested = req.user.invested - quantity*mystock.buyPrice
             req.user.balance = req.user.balance + quantity*price
             req.user.buyPrice = req.user.invested/totalStocks
             req.user.roi.totalReturns = totalReturn
@@ -244,7 +244,7 @@ router.post('/transaction', auth,async(req, res) => {
                 totalReturn = totalReturn + mystocks[i].totalReturns
             }
 
-            req.user.invested = req.user.invested - quantity*price
+            req.user.invested = req.user.invested - quantity*mystock.buyPrice
             req.user.balance = req.user.balance + quantity*price
             req.user.buyPrice = req.user.invested/totalStocks
             req.user.roi.totalReturns = totalReturn
@@ -382,7 +382,7 @@ router.post('/transaction', auth,async(req, res) => {
 
 })
 
-router.get('/mystocks', async(req,res)=>{
+router.post('/mystocks', async(req,res)=>{
     
     let mystocks = await Mystock.find({})
 
@@ -393,7 +393,7 @@ router.get('/mystocks', async(req,res)=>{
     }
 })
 
-router.get('/history', async(req,res)=>{
+router.post('/history', async(req,res)=>{
     
     let history = await History.find({})
 
