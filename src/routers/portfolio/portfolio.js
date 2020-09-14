@@ -14,7 +14,7 @@ const Str = require('@supercharge/strings')
 
 const router = new express.Router()
 
-router.post('/createstock', async(req,res)=>{
+router.post('/createstock', async(req,res)=>{   
 
     let name = req.body.name
     let stockType = req.body.stockType
@@ -255,6 +255,7 @@ router.post('/transaction', auth,async(req, res) => {
         
     }
 
+
     // let mystock = await Mystock.findOne({name, owner:req.user._id})
     // console.log('Mystock before if----->', mystock);
     // if(!mystock){
@@ -361,10 +362,27 @@ router.post('/transaction', auth,async(req, res) => {
 
 })
 
+router.get('/mystocks', async(req,res)=>{
+    
+    let mystocks = await Mystock.find({})
 
+    try {
+        res.send(history)
+    } catch (e) {
+        res.send(e)
+    }
+})
 
+router.get('/history', async(req,res)=>{
+    
+    let history = await History.find({})
 
-
+    try {
+        res.send(history)
+    } catch (e) {
+        res.send(e)
+    }
+})
 
 
 
