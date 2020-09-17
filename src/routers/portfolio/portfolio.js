@@ -7,11 +7,13 @@ const Mystock = require('../../models/mystocks')
 const History = require('../../models/history')
 const Bond = require('../../models/bonds')
 const BondHistory = require('../../models/bondHistory')
+const BondReturnHistory = require('../../models/bondReturnHistory')
 
 const auth = require('../../middleware/auth')
 const { MaxKey } = require('mongodb')
 
 const Str = require('@supercharge/strings')
+const { findOne } = require('../../models/bonds')
 
 
 const router = new express.Router()
@@ -307,9 +309,10 @@ router.post('/bondtransaction', auth, async(req,res)=>{
     let coupon = 0.5
     let price = req.body.price
     let trade = req.body.trade
-    
+    let date = req.body.date
+    date = date.split('/')
     let months={'01':'January','02':'February','03':'March','04':'April','05':'May','06':'June','07':'July','08':'August','09':'September','10':'October','11':'November','12':'December'}
-    console.log('name quant buypr---->', name, quantity, trade, date);
+    console.log('name quant buypr---->', name, trade, date);
     console.log(`${date[0]} ${months[date[1]]} ${date[2]}`);
     let date1 = new Date(`${date[0] } ${months[date[1]]} ${date[2]}`)
     console.log('date1----------->',date1);
@@ -320,9 +323,9 @@ router.post('/bondtransaction', auth, async(req,res)=>{
     let doy
 
     if(date1<date01){
-        doy = (date1 - date0)/(1000*60*60*24) + 1
+        doy = (date1 - date0)/(1000*60*60*24)
     }else{
-        doy = (date1 - date01)/(1000*60*60*24) + 1
+        doy = (date1 - date01)/(1000*60*60*24)
     }
 
     console.log('DOY----------->', doy);
@@ -338,7 +341,7 @@ router.post('/bondtransaction', auth, async(req,res)=>{
             req.user.balance = req.user.balance - totalPrice
             req.user.bond.invested = totalPrice
             await req.user.save()
-
+            console.log('user saved----------');
             let bond = new Bond({
                 name,
                 buyPrice: price,
@@ -346,15 +349,25 @@ router.post('/bondtransaction', auth, async(req,res)=>{
                 owner: req.user._id
             })
             await bond.save()
-
+            let bondTemp = await Bond.findOne({name:bond.name, owner: req.user._id})
+            console.log('bond saved--------------');
             let bondHistory = new BondHistory({
                 name,
-                stockId,
+                stockId: bondTemp.stockId,
                 owner: bond.owner,
-                buyPrice,
-                buyPriceDirty
+                trade,
+                price,
+                priceDirty: totalPrice
             })
             await bondHistory.save()
+            console.log('bondhistory saved----------------');
+
+            // let bondReturnHistory = new BondReturnHistory({
+            //     name,
+            //     stockId: bond.stockId,
+            //     owner: bond.owner,
+
+            // })
 
             return res.send({
                 bond,
@@ -364,29 +377,37 @@ router.post('/bondtransaction', auth, async(req,res)=>{
 
         }else{
 
-            let accInt = buyPrice*0.5*doy/(36500)
-            let totalPrice = buyPrice + accInt
+            let bond = await Bond.findOne({name, owner: req.user._id})
 
-            let bond = new Bond({
-                name,
-                buyPrice,
-                buyPriceDirty: totalPrice,
-                owner: req.user._id
-            })
+            let accInt = bond.buyPrice*0.5*doy/(36500)
+            let totalPrice = bond.buyPrice + accInt
+
             await bond.save()
-
+            console.log('bond saved---------------');
             req.user.balance = req.user.balance + totalPrice
-            req.user.bond.invested = req.user.bond.invested - buyPriceDirty
+            req.user.bond.invested = req.user.bond.invested - bond.buyPriceDirty
             await req.user.save()
+            console.log('user saved------------------------');
 
             let bondHistory = new BondHistory({
                 name,
-                stockId,
+                stockId: bond.stockId,
                 owner: bond.owner,
-                buyPrice,
-                buyPriceDirty
+                trade,
+                price,
+                priceDirty
             })
             await bondHistory.save()
+            console.log('bondhistory saved---------------');
+
+            // let bondReturnHistory = new BondReturnHistory({
+            //     name,
+            //     stockId: bond.stockId,
+            //     owner: bond.owner,
+            //     totalReturns: 
+            // })
+            // await bondReturnHistory.save()
+            let del = await Bond.findOneAndDelete({name,owner: bond.owner})
 
             return res.send({
                 bond,
@@ -402,6 +423,7 @@ router.post('/bondtransaction', auth, async(req,res)=>{
 
 router.patch('/updatestockprices', async(req,res)=>{
 
+
     let date = req.body.date
     date = date.split('/')
     let months={'01':'January','02':'February','03':'March','04':'April','05':'May','06':'June','07':'July','08':'August','09':'September','10':'October','11':'November','12':'December'}
@@ -414,25 +436,33 @@ router.patch('/updatestockprices', async(req,res)=>{
     let doy = (date1 - date0)/(1000*60*60*24)
     console.log('DOY----------->', doy);
 
-    let totalReturns = 0
+    try {
+        
+        let totalReturns = 0
 
-    let mystocks = await mystocks.find({})
-    for(var i=0;i<mystocks.length;i++){
-        let stock = await Stock.findOne({name:mystocks[i].name})
-        mystocks[i].totalReturns = mystocks[i].quantity*stock.prices[doy+1]
-        totalReturns = totalReturns + mystocks[i].totalReturns
-        await mystocks[i].save()
+        let mystocks = await mystocks.find({})
 
-    }
+        for(var i=0;i<mystocks.length;i++){
+            let stock = await Stock.findOne({name:mystocks[i].name})
+            mystocks[i].totalReturns = mystocks[i].quantity*stock.prices[doy+1]
+            totalReturns = totalReturns + mystocks[i].totalReturns
+            await mystocks[i].save()
 
-    req.user.roi.totalReturns = totalReturns
-    req.user.roi.percentage = totalReturns*100/req.user.invested
-    await req.user.save()
+        }
 
-    res.send({
-        user: req.user,
-        mystocks
-    })
+        req.user.roi.totalReturns = totalReturns
+        req.user.roi.percentage = totalReturns*100/req.user.invested
+        await req.user.save()
+
+        res.send({
+            user: req.user,
+            mystocks
+        })
+
+        
+    } catch (e) {
+        res.send(e)
+    }  
 })
 
 router.patch('/updatebondprices', async(req,res)=>{
@@ -452,24 +482,29 @@ router.patch('/updatebondprices', async(req,res)=>{
 
     let bonds = await Bond.find({})
 
-    let totalReturns = 0
+    try {
+        let totalReturns = 0
 
-    for(var i=0;i<bonds.length;i++){
+        for(var i=0;i<bonds.length;i++){
 
-        if(date1>date01){
-            bonds[i].totalReturns = 1
-            totalReturns = totalReturns + bonds[i].save()
-            await bonds[i].save()
+            if(date1>date01){
+                bonds[i].totalReturns = 1
+                totalReturns = totalReturns + bonds[i].save()
+                await bonds[i].save()
+            }
         }
+
+        req.user.bond.totalReturns = req.user.bond.totalReturns + totalReturns
+        await req.user.save()
+
+        res.send({
+            user: req.user,
+            bonds
+        })
+    } catch (e) {
+        res.send(e)
     }
 
-    req.user.bond.totalReturns = req.user.bond.totalReturns + totalReturns
-    await req.user.save()
-
-    res.send({
-        user: req.user,
-        bonds
-    })
 })
 
 

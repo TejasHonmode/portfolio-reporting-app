@@ -23,22 +23,25 @@ const bondHistorySchema = new mongoose.Schema({
         required: true,
         ref: 'User'
     },
-    quantity:{
-        type: Number,
+    // quantity:{
+    //     type: Number,
+    // },
+    trade:{
+        type: String
     },
-    buyPrice:{
+    price:{
         type: Number
     },
-    buyPriceDirty:{
+    priceDirty:{
         type: Number
-    },
+    }
     // totalInvestment:{
     //     type: Number
     // },
-    totalReturns:{
-        type: Number,
-        default: 0
-    }
+    // totalReturns:{
+    //     type: Number,
+    //     default: 0
+    // }
 }, {
     timestamps: true
 })
