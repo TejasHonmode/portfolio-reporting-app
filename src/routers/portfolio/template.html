@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction History</title>
+    <style>
+        table, th, td {
+          border: 1px solid black;
+          border-collapse: collapse;
+        }
+    </style>
+</head>
+<body>
+    <h1>Transaction till the time of PDF creation</h1>
+    <!-- <ol>
+        {{#each stockHistory}}
+        <li>Stock Name: {{this.name}}</li>
+        <li>Stock Type: {{this.stockType}}</li>
+        <li>Stock ID: {{this.stockId}}</li>
+        <li>Transaction: {{this.trade}}</li>
+        <li>Quantity: {{this.quantity}}</li>
+        <li>Price: {{this.pricePerUnit}}</li>
+        <li>Total Amount: {{this.totalAmount}}</li>
+        <li>Date: {{this.date}}</li>
+        <br>
+        {{/each}}
+    </ol>
+    <br> -->
+    <br>
+    <table>
+        <tr>
+            <th>Stock Name</th>
+            <th>Stock Type</th>
+            <th>Stock ID</th>
+            <th>Transaction</th>
+            <th>Quantity</th>
+            <th>Price</th>
+            <th>Total Amount</th>
+            <th>Date</th>
+        </tr>
+        {{#each stockHistory}}
+        <tr>
+            <td>{{this.name}}</td>
+            <td>{{this.stockType}}</td>
+            <td>{{this.stockId}}</td>
+            <td>{{this.trade}}</td>
+            <td>{{this.quantity}}</td>
+            <td>{{this.pricePerUnit}}</td>
+            <td>{{this.totalAmount}}</td>
+            <td>{{this.date}}</td>
+        </tr>
+        {{/each}}
+    </table>
+
+</body>
+</html>

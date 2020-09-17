@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transaction History</title>
+</head>
+<body>
+    <h1>Transaction till the time of PDF creation</h1>
+    <ul>
+        {{#each stockHistory}}
+        <li>Stock Name: {{this.name}}</li>
+        <li>Stock Type: {{this.stockType}}</li>
+        <li>Stock ID: {{this.stockId}}</li>
+        <li>Transaction: {{this.trade}}</li>
+        <li>Quantity: {{this.quantity}}</li>
+        <li>Price: {{this.pricePerUnit}}</li>
+        <li>Total Amount: {{this.totalAmount}}</li>
+        <li>Date: {{this.date}}</li>
+        <br>
+        {{/each}}
+    </ul>
+    <br>
+
+</body>
+</html>

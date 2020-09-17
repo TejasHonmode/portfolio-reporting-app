@@ -1,5 +1,11 @@
 const express = require('express')
 const chance = require('chance').Chance()
+const pdf = require('pdf-creator-node')
+// const pdf = require('pdfkit')
+// const fs = require('fs')
+const fs = require('fs-extra')
+const puppeteer = require('puppeteer')
+
 
 const User = require('../../models/user')
 const Stock = require('../../models/stocks')
@@ -14,6 +20,7 @@ const { MaxKey } = require('mongodb')
 
 const Str = require('@supercharge/strings')
 const { findOne } = require('../../models/bonds')
+const { output } = require('pdfkit')
 
 
 const router = new express.Router()
@@ -500,6 +507,62 @@ router.patch('/updatebondprices', async(req,res)=>{
         res.send({
             user: req.user,
             bonds
+        })
+    } catch (e) {
+        res.send(e)
+    }
+
+})
+
+router.post('/createpdf', async(req,res)=>{
+
+    // try {
+        
+    //     const browser = await puppeteer.launch()
+    //     const page = await browser.page()
+
+    //     await page.setContent('<h1>Hello</h1>')
+    //     await page.emulateMedia('screen')
+    //     await page.pdf({
+    //         path: 'output.pdf',
+    //         format: 'A4',
+    //         printBackground: true
+    //     })
+
+    //     console.log('done')
+    //     await browser.close()
+    //     // process.exit()
+    //     res.send({
+    //         msg: 'Done'
+    //     })
+        
+
+    // } catch (e) {
+    //     res.send(e)
+    // }
+
+
+    try {
+        const html = await fs.readFileSync('D:/ReactJS/NodeJs/portfolio-reporting-app/src/routers/portfolio/template.html', 'utf-8')
+        // console.log('html--------------------', html);
+        const stockHistory = await History.find({}).lean()
+
+        var options = { format: "A3", orientation: "portrait", border: "10mm" }
+
+        const document = {
+            html,
+            data: {
+                stockHistory
+            },
+            path: "D:/ReactJS/NodeJs/portfolio-reporting-app/src/routers/portfolio/output.pdf"
+        }
+        console.log(document);
+        const responsepdf = await pdf.create(document, options)
+        console.log('response---------',responsepdf);
+
+        res.send({
+            html,
+            responsepdf
         })
     } catch (e) {
         res.send(e)
